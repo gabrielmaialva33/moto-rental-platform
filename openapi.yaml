@@ -1,0 +1,1857 @@
+openapi: 3.1.0
+info:
+  title: Motorcycle Rental Platform API
+  description: Comprehensive RESTful API for motorcycle rental platform with Brazilian document validation
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: api-support@moto-rental.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.moto-rental.com/v1
+    description: Production server
+  - url: https://staging-api.moto-rental.com/v1
+    description: Staging server
+  - url: http://localhost:8000/api/v1
+    description: Development server
+
+security:
+  - bearerAuth: []
+  - apiKey: []
+
+paths:
+  # Authentication Endpoints
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register new user
+      description: Creates a new user account with Brazilian document validation
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              name: "João Silva"
+              email: "joao.silva@email.com"
+              password: "SecurePass123!"
+              password_confirmation: "SecurePass123!"
+              cpf: "123.456.789-01"
+              phone: "+55 11 99999-9999"
+              birth_date: "1990-01-15"
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      description: Authenticates user and returns access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: "joao.silva@email.com"
+              password: "SecurePass123!"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout user
+      description: Invalidates the current access token
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: Generates a new access token
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  /auth/profile:
+    get:
+      tags:
+        - Authentication
+      summary: Get user profile
+      description: Returns current user profile information
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+    put:
+      tags:
+        - Authentication
+      summary: Update user profile
+      description: Updates current user profile information
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  # Motorcycle Management
+  /motorcycles:
+    get:
+      tags:
+        - Motorcycles
+      summary: List motorcycles
+      description: Retrieves a paginated list of motorcycles with filtering options
+      security: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 15
+        - name: brand
+          in: query
+          schema:
+            type: string
+        - name: min_price
+          in: query
+          schema:
+            type: number
+            format: float
+        - name: max_price
+          in: query
+          schema:
+            type: number
+            format: float
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [available, rented, maintenance, inactive]
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [brand, model, daily_rate, year]
+            default: brand
+        - name: sort_order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search in brand, model, or description
+      responses:
+        '200':
+          description: Motorcycles retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MotorcyclePagination'
+
+    post:
+      tags:
+        - Motorcycles
+      summary: Create motorcycle
+      description: Creates a new motorcycle (Admin/Employee only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMotorcycleRequest'
+      responses:
+        '201':
+          description: Motorcycle created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Motorcycle'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /motorcycles/{id}:
+    get:
+      tags:
+        - Motorcycles
+      summary: Get motorcycle details
+      description: Retrieves detailed information about a specific motorcycle
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Motorcycle details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Motorcycle'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      tags:
+        - Motorcycles
+      summary: Update motorcycle
+      description: Updates motorcycle information (Admin/Employee only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMotorcycleRequest'
+      responses:
+        '200':
+          description: Motorcycle updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Motorcycle'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+    delete:
+      tags:
+        - Motorcycles
+      summary: Delete motorcycle
+      description: Soft deletes a motorcycle (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Motorcycle deleted successfully
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /motorcycles/{id}/availability:
+    get:
+      tags:
+        - Motorcycles
+      summary: Check motorcycle availability
+      description: Checks if motorcycle is available for specific dates
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: start_date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Availability checked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityResponse'
+
+  # Rental Operations
+  /rentals:
+    get:
+      tags:
+        - Rentals
+      summary: List user rentals
+      description: Retrieves paginated list of current user's rentals
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 15
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [reserved, active, completed, cancelled]
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Rentals retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RentalPagination'
+
+    post:
+      tags:
+        - Rentals
+      summary: Create rental
+      description: Creates a new rental reservation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRentalRequest'
+      responses:
+        '201':
+          description: Rental created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rental'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /rentals/{id}:
+    get:
+      tags:
+        - Rentals
+      summary: Get rental details
+      description: Retrieves detailed information about a specific rental
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Rental details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rental'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      tags:
+        - Rentals
+      summary: Update rental
+      description: Updates rental information
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRentalRequest'
+      responses:
+        '200':
+          description: Rental updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rental'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /rentals/{id}/complete:
+    post:
+      tags:
+        - Rentals
+      summary: Complete rental
+      description: Marks rental as completed and motorcycle as returned
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteRentalRequest'
+      responses:
+        '200':
+          description: Rental completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rental'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /rentals/{id}/cancel:
+    post:
+      tags:
+        - Rentals
+      summary: Cancel rental
+      description: Cancels a rental reservation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: Reason for cancellation
+      responses:
+        '200':
+          description: Rental cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rental'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # Payment Processing
+  /payments:
+    get:
+      tags:
+        - Payments
+      summary: List user payments
+      description: Retrieves paginated list of current user's payments
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 15
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, completed, failed, refunded]
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [rental, deposit, additional, refund]
+      responses:
+        '200':
+          description: Payments retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentPagination'
+
+    post:
+      tags:
+        - Payments
+      summary: Initiate payment
+      description: Creates a new payment for a rental
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentRequest'
+      responses:
+        '201':
+          description: Payment initiated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /payments/{id}:
+    get:
+      tags:
+        - Payments
+      summary: Get payment details
+      description: Retrieves detailed information about a specific payment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Payment details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /payments/{id}/verify:
+    post:
+      tags:
+        - Payments
+      summary: Verify payment
+      description: Verifies payment status with payment gateway
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Payment verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /payments/{id}/refund:
+    post:
+      tags:
+        - Payments
+      summary: Refund payment
+      description: Initiates a refund for a completed payment (Admin/Employee only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  type: number
+                  format: float
+                  description: Refund amount (if partial)
+                reason:
+                  type: string
+                  description: Reason for refund
+      responses:
+        '200':
+          description: Refund initiated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # User Management
+  /users/documents:
+    post:
+      tags:
+        - User Management
+      summary: Upload user documents
+      description: Uploads and validates user documents (CNH, RG, etc.)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                cnh_front:
+                  type: string
+                  format: binary
+                cnh_back:
+                  type: string
+                  format: binary
+                rg_front:
+                  type: string
+                  format: binary
+                rg_back:
+                  type: string
+                  format: binary
+                selfie:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Documents uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentUploadResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /users/verification:
+    get:
+      tags:
+        - User Management
+      summary: Get verification status
+      description: Returns current user verification status
+      responses:
+        '200':
+          description: Verification status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationStatus'
+
+    post:
+      tags:
+        - User Management
+      summary: Request verification
+      description: Submits user for document verification
+      responses:
+        '200':
+          description: Verification request submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationStatus'
+
+  # Maintenance Records
+  /motorcycles/{id}/maintenance:
+    get:
+      tags:
+        - Maintenance
+      summary: List motorcycle maintenance records
+      description: Retrieves maintenance history for a specific motorcycle (Admin/Employee only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 15
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [preventive, corrective, inspection]
+      responses:
+        '200':
+          description: Maintenance records retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenancePagination'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+    post:
+      tags:
+        - Maintenance
+      summary: Create maintenance record
+      description: Creates a new maintenance record (Admin/Employee only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMaintenanceRequest'
+      responses:
+        '201':
+          description: Maintenance record created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceRecord'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  # Admin Operations
+  /admin/users:
+    get:
+      tags:
+        - Admin
+      summary: List all users
+      description: Retrieves paginated list of all users (Admin only)
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 15
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [admin, employee, customer]
+        - name: is_verified
+          in: query
+          schema:
+            type: boolean
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by name, email, or CPF
+      responses:
+        '200':
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPagination'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/users/{id}/verify:
+    post:
+      tags:
+        - Admin
+      summary: Verify user documents
+      description: Manually verify or reject user documents (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                verified:
+                  type: boolean
+                notes:
+                  type: string
+                  description: Verification notes
+      responses:
+        '200':
+          description: User verification updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /admin/statistics:
+    get:
+      tags:
+        - Admin
+      summary: Get platform statistics
+      description: Retrieves platform usage statistics (Admin only)
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [today, week, month, year]
+            default: month
+      responses:
+        '200':
+          description: Statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformStatistics'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from login endpoint
+    apiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for server-to-server communication
+
+  schemas:
+    # Authentication Schemas
+    RegisterRequest:
+      type: object
+      required:
+        - name
+        - email
+        - password
+        - password_confirmation
+        - cpf
+        - phone
+        - birth_date
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        password:
+          type: string
+          minLength: 8
+          pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]'
+        password_confirmation:
+          type: string
+        cpf:
+          type: string
+          pattern: '^\d{3}\.\d{3}\.\d{3}-\d{2}$'
+          description: Brazilian CPF format (XXX.XXX.XXX-XX)
+        phone:
+          type: string
+          pattern: '^\+55 \d{2} \d{4,5}-\d{4}$'
+          description: Brazilian phone format (+55 XX XXXXX-XXXX)
+        birth_date:
+          type: string
+          format: date
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/User'
+            access_token:
+              type: string
+            token_type:
+              type: string
+              example: "Bearer"
+            expires_at:
+              type: string
+              format: date-time
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 255
+        phone:
+          type: string
+          pattern: '^\+55 \d{2} \d{4,5}-\d{4}$'
+        whatsapp:
+          type: string
+          pattern: '^\+55 \d{2} \d{4,5}-\d{4}$'
+        address:
+          type: string
+          maxLength: 500
+        city:
+          type: string
+          maxLength: 100
+        state:
+          type: string
+          pattern: '^[A-Z]{2}$'
+          description: Brazilian state code (2 letters)
+        zip_code:
+          type: string
+          pattern: '^\d{5}-\d{3}$'
+          description: Brazilian ZIP code format (XXXXX-XXX)
+
+    # User Schemas
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        cpf:
+          type: string
+        rg:
+          type: string
+        cnh:
+          type: string
+        cnh_category:
+          type: string
+          enum: [A, AB, AC, AD, AE]
+        cnh_expiry_date:
+          type: string
+          format: date
+        phone:
+          type: string
+        whatsapp:
+          type: string
+        birth_date:
+          type: string
+          format: date
+        address:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        zip_code:
+          type: string
+        role:
+          type: string
+          enum: [admin, employee, customer]
+        is_verified:
+          type: boolean
+        credit_limit:
+          type: number
+          format: float
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # Motorcycle Schemas
+    CreateMotorcycleRequest:
+      type: object
+      required:
+        - brand
+        - model
+        - year
+        - plate
+        - color
+        - engine_capacity
+        - daily_rate
+      properties:
+        brand:
+          type: string
+          maxLength: 100
+        model:
+          type: string
+          maxLength: 100
+        year:
+          type: integer
+          minimum: 1900
+          maximum: 2030
+        plate:
+          type: string
+          pattern: '^[A-Z]{3}-\d{4}$|^[A-Z]{3}\d[A-Z]\d{2}$'
+          description: Brazilian license plate (ABC-1234 or ABC1D23)
+        color:
+          type: string
+          maxLength: 50
+        engine_capacity:
+          type: integer
+          minimum: 50
+          maximum: 2000
+        mileage:
+          type: integer
+          minimum: 0
+          default: 0
+        daily_rate:
+          type: number
+          format: float
+          minimum: 0.01
+        description:
+          type: string
+          maxLength: 1000
+        features:
+          type: array
+          items:
+            type: string
+        images:
+          type: array
+          items:
+            type: string
+            format: uri
+
+    UpdateMotorcycleRequest:
+      type: object
+      properties:
+        brand:
+          type: string
+          maxLength: 100
+        model:
+          type: string
+          maxLength: 100
+        year:
+          type: integer
+          minimum: 1900
+          maximum: 2030
+        color:
+          type: string
+          maxLength: 50
+        engine_capacity:
+          type: integer
+          minimum: 50
+          maximum: 2000
+        mileage:
+          type: integer
+          minimum: 0
+        daily_rate:
+          type: number
+          format: float
+          minimum: 0.01
+        status:
+          type: string
+          enum: [available, rented, maintenance, inactive]
+        description:
+          type: string
+          maxLength: 1000
+        features:
+          type: array
+          items:
+            type: string
+        images:
+          type: array
+          items:
+            type: string
+            format: uri
+
+    Motorcycle:
+      type: object
+      properties:
+        id:
+          type: integer
+        brand:
+          type: string
+        model:
+          type: string
+        year:
+          type: integer
+        plate:
+          type: string
+        color:
+          type: string
+        engine_capacity:
+          type: integer
+        mileage:
+          type: integer
+        daily_rate:
+          type: number
+          format: float
+        status:
+          type: string
+          enum: [available, rented, maintenance, inactive]
+        description:
+          type: string
+        features:
+          type: array
+          items:
+            type: string
+        images:
+          type: array
+          items:
+            type: string
+            format: uri
+        last_maintenance_at:
+          type: string
+          format: date-time
+        next_maintenance_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    AvailabilityResponse:
+      type: object
+      properties:
+        available:
+          type: boolean
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        conflicts:
+          type: array
+          items:
+            type: object
+            properties:
+              start_date:
+                type: string
+                format: date
+              end_date:
+                type: string
+                format: date
+              reason:
+                type: string
+
+    # Rental Schemas
+    CreateRentalRequest:
+      type: object
+      required:
+        - motorcycle_id
+        - start_date
+        - end_date
+        - pickup_location
+      properties:
+        motorcycle_id:
+          type: integer
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+        pickup_location:
+          type: string
+          maxLength: 255
+        return_location:
+          type: string
+          maxLength: 255
+        notes:
+          type: string
+          maxLength: 1000
+        insurance_details:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: [basic, premium, full]
+            coverage_amount:
+              type: number
+              format: float
+
+    UpdateRentalRequest:
+      type: object
+      properties:
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+        pickup_location:
+          type: string
+          maxLength: 255
+        return_location:
+          type: string
+          maxLength: 255
+        notes:
+          type: string
+          maxLength: 1000
+
+    CompleteRentalRequest:
+      type: object
+      properties:
+        final_mileage:
+          type: integer
+          minimum: 0
+        additional_charges:
+          type: number
+          format: float
+          minimum: 0
+        additional_charges_description:
+          type: string
+          maxLength: 500
+        condition_notes:
+          type: string
+          maxLength: 1000
+
+    Rental:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        motorcycle_id:
+          type: integer
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+        actual_return_date:
+          type: string
+          format: date-time
+        daily_rate:
+          type: number
+          format: float
+        total_amount:
+          type: number
+          format: float
+        security_deposit:
+          type: number
+          format: float
+        discount:
+          type: number
+          format: float
+        additional_charges:
+          type: number
+          format: float
+        additional_charges_description:
+          type: string
+        status:
+          type: string
+          enum: [reserved, active, completed, cancelled]
+        payment_status:
+          type: string
+          enum: [pending, partial, paid, refunded]
+        pickup_location:
+          type: string
+        return_location:
+          type: string
+        notes:
+          type: string
+        insurance_details:
+          type: object
+        initial_mileage:
+          type: integer
+        final_mileage:
+          type: integer
+        duration_in_days:
+          type: integer
+        user:
+          $ref: '#/components/schemas/User'
+        motorcycle:
+          $ref: '#/components/schemas/Motorcycle'
+        payments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Payment'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # Payment Schemas
+    CreatePaymentRequest:
+      type: object
+      required:
+        - rental_id
+        - amount
+        - payment_method
+      properties:
+        rental_id:
+          type: integer
+        amount:
+          type: number
+          format: float
+          minimum: 0.01
+        type:
+          type: string
+          enum: [rental, deposit, additional, refund]
+          default: rental
+        payment_method:
+          type: string
+          enum: [credit_card, debit_card, pix, bank_transfer, cash]
+        description:
+          type: string
+          maxLength: 255
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: integer
+        rental_id:
+          type: integer
+        user_id:
+          type: integer
+        transaction_id:
+          type: string
+        amount:
+          type: number
+          format: float
+        type:
+          type: string
+          enum: [rental, deposit, additional, refund]
+        payment_method:
+          type: string
+          enum: [credit_card, debit_card, pix, bank_transfer, cash]
+        status:
+          type: string
+          enum: [pending, completed, failed, refunded]
+        gateway:
+          type: string
+        gateway_response:
+          type: object
+        description:
+          type: string
+        paid_at:
+          type: string
+          format: date-time
+        refunded_at:
+          type: string
+          format: date-time
+        rental:
+          $ref: '#/components/schemas/Rental'
+        user:
+          $ref: '#/components/schemas/User'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # Maintenance Schemas
+    CreateMaintenanceRequest:
+      type: object
+      required:
+        - type
+        - maintenance_date
+        - mileage_at_maintenance
+        - description
+      properties:
+        type:
+          type: string
+          enum: [preventive, corrective, inspection]
+        maintenance_date:
+          type: string
+          format: date
+        mileage_at_maintenance:
+          type: integer
+          minimum: 0
+        cost:
+          type: number
+          format: float
+          minimum: 0
+        description:
+          type: string
+          maxLength: 1000
+        services_performed:
+          type: array
+          items:
+            type: string
+        parts_replaced:
+          type: array
+          items:
+            type: string
+        performed_by:
+          type: string
+          maxLength: 255
+        workshop:
+          type: string
+          maxLength: 255
+        next_maintenance_date:
+          type: string
+          format: date
+        next_maintenance_mileage:
+          type: integer
+          minimum: 0
+
+    MaintenanceRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        motorcycle_id:
+          type: integer
+        type:
+          type: string
+          enum: [preventive, corrective, inspection]
+        maintenance_date:
+          type: string
+          format: date
+        mileage_at_maintenance:
+          type: integer
+        cost:
+          type: number
+          format: float
+        description:
+          type: string
+        services_performed:
+          type: array
+          items:
+            type: string
+        parts_replaced:
+          type: array
+          items:
+            type: string
+        performed_by:
+          type: string
+        workshop:
+          type: string
+        next_maintenance_date:
+          type: string
+          format: date
+        next_maintenance_mileage:
+          type: integer
+        motorcycle:
+          $ref: '#/components/schemas/Motorcycle'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # Document Management Schemas
+    DocumentUploadResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            documents:
+              type: object
+              properties:
+                cnh_front:
+                  type: string
+                  format: uri
+                cnh_back:
+                  type: string
+                  format: uri
+                rg_front:
+                  type: string
+                  format: uri
+                rg_back:
+                  type: string
+                  format: uri
+                selfie:
+                  type: string
+                  format: uri
+
+    VerificationStatus:
+      type: object
+      properties:
+        is_verified:
+          type: boolean
+        verification_status:
+          type: string
+          enum: [pending, in_review, verified, rejected]
+        documents_uploaded:
+          type: boolean
+        verification_notes:
+          type: string
+        verified_at:
+          type: string
+          format: date-time
+
+    # Statistics Schema
+    PlatformStatistics:
+      type: object
+      properties:
+        period:
+          type: string
+        total_users:
+          type: integer
+        new_users:
+          type: integer
+        total_motorcycles:
+          type: integer
+        available_motorcycles:
+          type: integer
+        total_rentals:
+          type: integer
+        active_rentals:
+          type: integer
+        completed_rentals:
+          type: integer
+        total_revenue:
+          type: number
+          format: float
+        revenue_breakdown:
+          type: object
+          properties:
+            rentals:
+              type: number
+              format: float
+            deposits:
+              type: number
+              format: float
+            additional_charges:
+              type: number
+              format: float
+
+    # Pagination Schemas
+    MotorcyclePagination:
+      allOf:
+        - $ref: '#/components/schemas/PaginationMeta'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Motorcycle'
+
+    RentalPagination:
+      allOf:
+        - $ref: '#/components/schemas/PaginationMeta'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Rental'
+
+    PaymentPagination:
+      allOf:
+        - $ref: '#/components/schemas/PaginationMeta'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Payment'
+
+    MaintenancePagination:
+      allOf:
+        - $ref: '#/components/schemas/PaginationMeta'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/MaintenanceRecord'
+
+    UserPagination:
+      allOf:
+        - $ref: '#/components/schemas/PaginationMeta'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/User'
+
+    PaginationMeta:
+      type: object
+      properties:
+        current_page:
+          type: integer
+        last_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+        from:
+          type: integer
+        to:
+          type: integer
+        links:
+          type: object
+          properties:
+            first:
+              type: string
+              format: uri
+            last:
+              type: string
+              format: uri
+            prev:
+              type: string
+              format: uri
+            next:
+              type: string
+              format: uri
+
+    # Common Response Schemas
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+        data:
+          type: object
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+        errors:
+          type: object
+        error_code:
+          type: string
+
+    ValidationErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "The given data was invalid."
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+
+  responses:
+    UnauthorizedError:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: "Unauthenticated."
+            error_code: "UNAUTHENTICATED"
+
+    ForbiddenError:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: "This action is unauthorized."
+            error_code: "FORBIDDEN"
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: "Resource not found."
+            error_code: "NOT_FOUND"
+
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationErrorResponse'
+          example:
+            success: false
+            message: "The given data was invalid."
+            errors:
+              email: ["The email field is required."]
+              cpf: ["The CPF format is invalid."]
+
+    RateLimitError:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: "Too many requests."
+            error_code: "RATE_LIMIT_EXCEEDED"
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+          description: Request limit per hour
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+          description: Remaining requests in current window
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+          description: Timestamp when rate limit resets
+
+  headers:
+    X-Request-ID:
+      description: Unique request identifier
+      schema:
+        type: string
+        format: uuid
+    X-Response-Time:
+      description: Response time in milliseconds
+      schema:
+        type: integer
+    X-API-Version:
+      description: API version used
+      schema:
+        type: string
+        example: "1.0.0"
+
+tags:
+  - name: Authentication
+    description: User authentication and profile management
+  - name: Motorcycles
+    description: Motorcycle catalog and management
+  - name: Rentals
+    description: Rental booking and management
+  - name: Payments
+    description: Payment processing and management
+  - name: User Management
+    description: User document and verification management
+  - name: Maintenance
+    description: Motorcycle maintenance records
+  - name: Admin
+    description: Administrative operations
+
+x-ratelimit:
+  limit: 1000
+  window: 3600
+  burst: 100
+
+x-response-headers:
+  X-Request-ID: always
+  X-Response-Time: always
+  X-API-Version: always
