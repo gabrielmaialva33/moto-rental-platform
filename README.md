@@ -1,17 +1,44 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Moto Rental Platform
+
+<h1 align="center">
+    <img src="https://raw.githubusercontent.com/gabrielmaialva33/moto-rental-platform/refs/heads/main/.github/assets/motorbike.png" height="200" alt="Moto Rental Platform">
+</h1>
 
 <p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+  <img src="https://img.shields.io/badge/version-2025.1.0-blue?style=for-the-badge&logo=semantic-release" alt="Version" />
+  <img src="https://img.shields.io/github/license/gabrielmaialva33/moto-rental-platform?color=00b8d3&style=for-the-badge&logo=mit" alt="License" />
+  <img src="https://img.shields.io/badge/PHP-8.4-777BB4?style=for-the-badge&logo=php" alt="PHP" />
+  <img src="https://img.shields.io/badge/Laravel-11.0-FF2D20?style=for-the-badge&logo=laravel" alt="Laravel" />
 </p>
 
-## About Laravel
+<p align="center">
+  <img src="https://img.shields.io/badge/MySQL-8.0-4479A1?style=for-the-badge&logo=mysql&logoColor=white" alt="MySQL" />
+  <img src="https://img.shields.io/badge/Redis-7.0-DC382D?style=for-the-badge&logo=redis" alt="Redis" />
+  <img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker" alt="Docker" />
+  <img src="https://img.shields.io/github/last-commit/gabrielmaialva33/moto-rental-platform?style=for-the-badge&logo=git" alt="Last Commit" />
+</p>
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and
-creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in
-many web projects, such as:
+<br>
+
+<p align="center">
+    <a href="README.md">English</a>
+    ·
+    <a href="README-pt.md">Português</a>
+</p>
+
+<p align="center">
+  <a href="#bookmark-sobre">Sobre</a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+  <a href="#rocket-tecnologias">Tecnologias</a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+  <a href="#boom-recursos">Recursos</a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+  <a href="#package-instalação">Instalação</a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+  <a href="#memo-licença">Licença</a>
+</p>
+
+<br>
+
+## :bookmark: Sobre
+
+**Moto Rental Platform** é um sistema completo de gestão de locação de motocicletas desenvolvido com Laravel 11 e PHP 8.4, seguindo as melhores práticas de desenvolvimento de 2025. O sistema oferece funcionalidades abrangentes para gerenciamento de frota, reservas, clientes, pagamentos e manutenções, com foco em segurança, performance e escalabilidade.
 
 - [Simple, fast routing engine](https://laravel.com/docs/routing).
 - [Powerful dependency injection container](https://laravel.com/docs/container).
